@@ -33,4 +33,11 @@ const signInWithGoogle = async () => {
       gpa: 0.0,
       credits: 0
     });
-  
+  }
+
+  return user;
+};
+
+const signOutUser = () => signOut(auth);
+
+export { auth, db, signInWithGoogle, signOutUser };

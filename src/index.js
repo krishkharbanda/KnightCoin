@@ -18,4 +18,19 @@ root.render(
         element={
           <ProtectedRoute>
             <App />
-          </ProtectedRoute
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <Profile />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
+  </Router>,
+  document.getElementById('root')
+);
+reportWebVitals();
