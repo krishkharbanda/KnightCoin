@@ -1,23 +1,146 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect, useState } from 'react';
+import { auth, db } from './firebase';
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+import axios from 'axios';
+import SideMenu from './components/SideMenu';
+import { useNavigate } from 'react-router-dom';
 
 function App() {
+  const [user, setUser] = useState(null);  // Track authenticated user
+  const [balance, setBalance] = useState(0);  // Store user's KnightCoin balance
+  const [prizes, setPrizes] = useState([]);  // Store available prizes
+  const [mining, setMining] = useState(false);  // Track mining state
+  const navigate = useNavigate();
+
+  // Monitor auth state and fetch user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      const currentUser = auth.currentUser;
+      if (currentUser) {
+        setUser(currentUser);
+
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        if (userDoc.exists()) {
+          setBalance(userDoc.data().amount);  // Set the user's initial balance
+        }
+      } else {
+        navigate('/login');  // Redirect if not authenticated
+      }
+    };
+
+    const fetchPrizes = async () => {
+      const prizeCollection = collection(db, 'prizes');
+      const prizeSnapshot = await getDocs(prizeCollection);
+      const prizeList = prizeSnapshot.docs.map((doc) => doc.data());
+      setPrizes(prizeList);
+    };
+
+    fetchUserData();
+    fetchPrizes();
+  }, [navigate]);
+
+  // Mining function to generate a new block and reward the user
+  const mineBlock = async () => {
+    setMining(true);  // Set mining state to true
+
+    try {
+      const response = await axios.post('http://localhost:1766/mine', { data: user.uid });
+      alert(`Block Mined! Hash: ${response.data.hash}`);
+
+      const newBalance = balance + 10;  // Reward user with 10 KnightCoins
+      setBalance(newBalance);  // Update the local state
+
+      // Update the user's balance in Firestore
+      const userRef = doc(db, 'users', user.uid);
+      await updateDoc(userRef, { amount: newBalance });
+    } catch (error) {
+      console.error('Error mining block:', error);
+      alert('Failed to mine block.');
+    } finally {
+      setMining(false);  // Reset mining state
+    }
+  };
+
+  // Redeem function to handle prize redemption
+  const redeemPrize = async (prize) => {
+    if (balance >= prize.price) {
+      const newBalance = balance - prize.price;
+
+      try {
+        const userRef = doc(db, 'users', user.uid);
+        await updateDoc(userRef, { amount: newBalance });
+        setBalance(newBalance);  // Update the local state
+
+        alert(`Successfully redeemed ${prize.name}!`);
+      } catch (error) {
+        console.error('Error redeeming prize:', error);
+        alert('Failed to redeem prize. Please try again.');
+      }
+    } else {
+      alert('Insufficient KnightCoins to redeem this prize.');
+    }
+  };
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="min-h-screen bg-white">
+      <nav className="bg-primary p-4 flex items-center">
+        <SideMenu />
+        <h1 className="text-secondary text-xl ml-4">KnightCoin Dashboard</h1>
+      </nav>
+
+      <div className="container mx-auto p-8">
+        <h2 className="text-2xl font-semibold text-primary mb-4 text-center">
+          Your Balance: {balance} KnightCoins
+        </h2>
+
+        <div className="flex justify-center mb-8">
+          <button
+            onClick={mineBlock}
+            disabled={mining}
+            className={`w-64 py-2 rounded-lg ${
+              mining ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary text-secondary hover:bg-white hover:text-primary border'
+            }`}
+          >
+            {mining ? 'Mining Block...' : 'Start Mining'}
+          </button>
+        </div>
+
+        <h2 className="text-2xl font-semibold text-primary mb-4 text-center">
+          Available Prizes
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {prizes.map((prize, index) => (
+            <div
+              key={index}
+              className="bg-secondary p-6 rounded-lg shadow-lg hover:shadow-xl border border-gray-300"
+            >
+              <img
+                src={prize.imageUrl}
+                alt={prize.name}
+                className="w-full h-48 object-cover rounded mb-4"
+              />
+              <h3 className="text-xl font-bold text-primary">{prize.name}</h3>
+              <p className="text-gray-700 mb-2">{prize.description}</p>
+              <p className="text-primary font-semibold mb-4">
+                Cost: {prize.price} KnightCoins
+              </p>
+              <button
+                onClick={() => redeemPrize(prize)}
+                className={`w-full py-2 rounded-lg ${
+                  balance >= prize.price
+                    ? 'bg-primary text-secondary hover:bg-white hover:text-primary border'
+                    : 'bg-gray-400 text-white cursor-not-allowed'
+                }`}
+                disabled={balance < prize.price}
+              >
+                Redeem
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
