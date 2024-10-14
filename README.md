@@ -1,4 +1,4 @@
-## **KnightCoin Dashboard**
+## **KnightCoin**
 
 KnightCoin is a blockchain-powered dashboard where users can:
 - **Mine blocks** to earn KnightCoins.
