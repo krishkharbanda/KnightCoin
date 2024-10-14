@@ -36,7 +36,6 @@ const Profile = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
 
-    // Parse numeric fields to ensure integer or float values
     const parsedValue = name === 'gpa' || name === 'credits' ? parseFloat(value) || 0 : value;
 
     setFormData({ ...formData, [name]: parsedValue });
@@ -46,7 +45,7 @@ const Profile = () => {
     try {
       const user = auth.currentUser;
       const userRef = doc(db, 'users', user.uid);
-      await updateDoc(userRef, formData); // Save the parsed data
+      await updateDoc(userRef, formData);
       setUserData(formData);
       setIsEditing(false);
       alert('Profile updated successfully!');

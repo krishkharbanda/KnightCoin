@@ -6,13 +6,12 @@ import SideMenu from './components/SideMenu';
 import { useNavigate } from 'react-router-dom';
 
 function App() {
-  const [user, setUser] = useState(null);  // Track authenticated user
-  const [balance, setBalance] = useState(0);  // Store user's KnightCoin balance
-  const [prizes, setPrizes] = useState([]);  // Store available prizes
-  const [mining, setMining] = useState(false);  // Track mining state
+  const [user, setUser] = useState(null);
+  const [balance, setBalance] = useState(0);
+  const [prizes, setPrizes] = useState([]);
+  const [mining, setMining] = useState(false);
   const navigate = useNavigate();
 
-  // Monitor auth state and fetch user data
   useEffect(() => {
     const fetchUserData = async () => {
       const currentUser = auth.currentUser;
@@ -22,10 +21,10 @@ function App() {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         if (userDoc.exists()) {
-          setBalance(userDoc.data().amount);  // Set the user's initial balance
+          setBalance(userDoc.data().amount);
         }
       } else {
-        navigate('/login');  // Redirect if not authenticated
+        navigate('/login');
       }
     };
 
@@ -40,29 +39,26 @@ function App() {
     fetchPrizes();
   }, [navigate]);
 
-  // Mining function to generate a new block and reward the user
   const mineBlock = async () => {
-    setMining(true);  // Set mining state to true
+    setMining(true);
 
     try {
       const response = await axios.post('http://localhost:1766/mine', { data: user.uid });
       alert(`Block Mined! Hash: ${response.data.hash}`);
 
-      const newBalance = balance + 10;  // Reward user with 10 KnightCoins
-      setBalance(newBalance);  // Update the local state
+      const newBalance = balance + 10;
+      setBalance(newBalance);
 
-      // Update the user's balance in Firestore
       const userRef = doc(db, 'users', user.uid);
       await updateDoc(userRef, { amount: newBalance });
     } catch (error) {
       console.error('Error mining block:', error);
       alert('Failed to mine block.');
     } finally {
-      setMining(false);  // Reset mining state
+      setMining(false);
     }
   };
 
-  // Redeem function to handle prize redemption
   const redeemPrize = async (prize) => {
     if (balance >= prize.price) {
       const newBalance = balance - prize.price;
@@ -70,7 +66,7 @@ function App() {
       try {
         const userRef = doc(db, 'users', user.uid);
         await updateDoc(userRef, { amount: newBalance });
-        setBalance(newBalance);  // Update the local state
+        setBalance(newBalance);
 
         alert(`Successfully redeemed ${prize.name}!`);
       } catch (error) {
