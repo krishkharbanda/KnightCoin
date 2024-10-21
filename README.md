@@ -28,11 +28,10 @@ KnightCoin is a blockchain-powered dashboard where users can:
 ## **Folder Structure**
 
 ```
-knightcoin-dashboard/
+knightcoin/
 │
 ├── backend/
 │   ├── blockchain.py   # Flask API for Blockchain
-│   └── requirements.txt  # Python dependencies
 │
 ├── frontend/
 │   ├── public/         # Static files
